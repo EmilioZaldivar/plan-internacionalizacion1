@@ -1,0 +1,30 @@
+# Plan de Internacionalización SICA
+## EKO Bootcamp 3.0 — Generador de Planes para empresas agroindustriales
+
+### Cómo desplegar en Vercel
+
+**Opción A — Sin GitHub (más rápido):**
+1. Instala Vercel CLI: `npm install -g vercel`
+2. En esta carpeta: `vercel`
+3. Sigue las instrucciones → tendrás una URL en 2 minutos
+
+**Opción B — Con GitHub:**
+1. Sube esta carpeta a un repositorio GitHub
+2. Ve a vercel.com → New Project → importa el repositorio
+3. En "Environment Variables" añade: `REACT_APP_ANTHROPIC_API_KEY` = tu API key
+4. Deploy
+
+### API Key de Anthropic
+1. Ve a console.anthropic.com
+2. Crea una API key
+3. Añádela como variable de entorno en Vercel:
+   - Nombre: `REACT_APP_ANTHROPIC_API_KEY`
+   - Valor: tu key
+
+### Actualizar la base de datos
+Los datos de TradeMap están en `src/App.js` en el objeto `DB.flows`.
+Cuando tengas nuevos archivos de TradeMap, contacta para actualizar.
+
+### Coste estimado
+- Hosting Vercel: GRATIS
+- API Claude por plan generado: ~$0.01-0.03 USD

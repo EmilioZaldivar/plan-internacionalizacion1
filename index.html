@@ -1,0 +1,844 @@
+import { useState } from "react";
+
+// ============================================================
+// BASE DE DATOS COMPLETA - Sin internet, sin API, sin coste
+// ============================================================
+const DB = {
+  paises: {
+    "Guatemala":      { poblacion: 18406359, pib_musd: 113200,  pib_percapita: 6150,  crecimiento: 3.7, exp_total: 14556.7, imp_total: 32491.5, exp_intra: 3062.9, imp_intra: 2955.1, agencia: "AGEXPORT",      moneda: "Quetzal (GTQ)",   idioma: "Español", nota: "Mayor economía de Centroamérica. Hub logístico terrestre clave. Segundo mayor exportador intrarregional SICA." },
+    "Honduras":       { poblacion: 11005850, pib_musd: 36735,   pib_percapita: 3400,  crecimiento: 3.5, exp_total: 11047.1, imp_total: 19640.7, exp_intra: 3740.2, imp_intra: 3406.7, agencia: "PROHONDURAS",   moneda: "Lempira (HNL)",   idioma: "Español", nota: "Mayor exportador intrarregional de la región SICA. Fuerte en manufactura y agroindustria." },
+    "El Salvador":    { poblacion: 6518000,  pib_musd: 35848,   pib_percapita: 5890,  crecimiento: 3.0, exp_total: 5137.6,  imp_total: 13298.4, exp_intra: 3356.4, imp_intra: 3264.4, agencia: "PROESA",        moneda: "Dólar USD",       idioma: "Español", nota: "Economía dolarizada. Tercer mayor exportador intrarregional. Mercado muy accesible por tierra." },
+    "Nicaragua":      { poblacion: 6916140,  pib_musd: 19412,   pib_percapita: 2608,  crecimiento: 3.6, exp_total: 7521.9,  imp_total: 11467.9, exp_intra: 2718.1, imp_intra: 3106.4, agencia: "CEI Nicaragua", moneda: "Córdoba (NIO)",   idioma: "Español", nota: "Fuerte base agroindustrial exportadora. Crecimiento sostenido. Controles fronterizos estrictos." },
+    "Costa Rica":     { poblacion: 5044197,  pib_musd: 95149,   pib_percapita: 17800, crecimiento: 3.9, exp_total: 21961,   imp_total: 28592,   exp_intra: 1404.6, imp_intra: 1561.1, agencia: "PROCOMER",     moneda: "Colón (CRC)",     idioma: "Español", nota: "Mayor PIB per cápita de Centroamérica. Mercado exigente en calidad e inocuidad alimentaria." },
+    "Panamá":         { poblacion: 4515600,  pib_musd: 87347,   pib_percapita: 19103, crecimiento: 2.9, exp_total: 964.3,   imp_total: 13992.2, exp_intra: 884.4,  imp_intra: 929.7,  agencia: "PROMEX",       moneda: "Balboa / USD",    idioma: "Español", nota: "Hub logístico regional. Mayor PIB per cápita SICA. Gran importador neto. Turismo corporativo." },
+    "Belice":         { poblacion: 420000,   pib_musd: 3300,    pib_percapita: 7900,  crecimiento: 4.3, exp_total: 4604,    imp_total: 2910,    exp_intra: 91.1,   imp_intra: 7.1,    agencia: "BELTRAIDE",    moneda: "Dólar Belice",    idioma: "Inglés",  nota: "Mercado pequeño pero abierto. Etiquetado en inglés obligatorio. Puente al Caribe anglófono." },
+    "Rep. Dominicana":{ poblacion: 11427600, pib_musd: 124282,  pib_percapita: 11000, crecimiento: 4.5, exp_total: 12925.1, imp_total: 29978,   exp_intra: 189.8,  imp_intra: 251.0,  agencia: "ProDominicana",moneda: "Peso dominicano", idioma: "Español", nota: "Mayor economía del Caribe. Turismo masivo. Gran importador neto. Requiere representante local." },
+  },
+
+  sectores: {
+    "cafe":             { nombre: "Café",                          hs: "0901", certs: ["ICO","Rainforest Alliance","Organic","Fair Trade","HACCP","Women-Owned"],    canales: ["HORECA","Retail premium","E-commerce","Travel retail"],         tendencia: "Creciente demanda de cafés de especialidad, trazabilidad y origen único. Drip coffee en expansión acelerada en mercados premium." },
+    "cacao":            { nombre: "Cacao y Chocolate",             hs: "1801", certs: ["Rainforest Alliance","Organic","Fair Trade","Non-GMO","HACCP"],              canales: ["Industria alimentaria","Retail gourmet","HORECA","E-commerce"],  tendencia: "Boom del chocolate fino de origen. Alta demanda de cacao sin azúcar, functional foods y productos saludables." },
+    "bebidas_jugos":    { nombre: "Bebidas y Jugos",               hs: "2009", certs: ["FSSC 22000","HACCP","Organic","Kosher","Halal","Non-GMO"],                   canales: ["Retail","Supermercados","HORECA","E-commerce"],                  tendencia: "Preferencia creciente por bebidas naturales sin azúcar añadida, funcionales y de origen tropical." },
+    "azucar":           { nombre: "Azúcar y Derivados",            hs: "1701", certs: ["Bonsucro","Organic","Fair Trade","FSSC 22000","HACCP"],                      canales: ["Industria alimentaria","Retail","Institucional","Granel"],       tendencia: "Crecimiento de panela y azúcares no refinados. Sustitutos naturales como stevia y azúcar de coco en alza." },
+    "mariscos":         { nombre: "Mariscos y Productos del Mar",  hs: "1604", certs: ["MSC","ASC","BAP","HACCP","FDA","Global GAP"],                               canales: ["Importadores especializados","Retail premium","HORECA"],        tendencia: "Alta demanda de productos sostenibles certificados. Acuicultura en expansión. Mercados asiáticos y europeos crecientes." },
+    "aceites":          { nombre: "Aceites Vegetales",             hs: "1511", certs: ["RSPO","ISCC","Organic","Non-GMO","HACCP","FSSC 22000"],                     canales: ["Industria alimentaria","Retail","Institucional","Granel"],       tendencia: "Crecimiento aceite de coco y specialty oils. Presión regulatoria sobre palma en mercados europeos." },
+    "lacteos":          { nombre: "Lácteos",                       hs: "0402", certs: ["FSSC 22000","HACCP","Organic","Kosher","Halal","IDF"],                       canales: ["Retail","Supermercados","HORECA","Industria alimentaria"],      tendencia: "Crecimiento de lácteos funcionales, sin lactosa y artesanales. Quesos de especialidad en mercados premium." },
+    "carnicos":         { nombre: "Cárnicos",                      hs: "0210", certs: ["HACCP","Halal","Kosher","Organic","Global GAP","USDA"],                     canales: ["Importadores cárnicos","Retail","HORECA","Institucional"],      tendencia: "Demanda de cortes premium, productos listos para consumo y cárnicos con certificación Halal/Kosher." },
+    "conservas":        { nombre: "Conservas Frutas y Vegetales",  hs: "2005", certs: ["FSSC 22000","HACCP","Organic","Non-GMO","Kosher","Halal"],                  canales: ["Retail","Supermercados","HORECA","E-commerce"],                  tendencia: "Crecimiento de conservas orgánicas, productos tropicales y preparaciones étnicas en mercados internacionales." },
+    "harinas":          { nombre: "Harinas y Cereales",            hs: "1102", certs: ["HACCP","Organic","Non-GMO","Gluten-free","Kosher","FSSC 22000"],             canales: ["Industria alimentaria","Retail","Institucional","Granel"],       tendencia: "Harinas alternativas sin gluten y de origen tropical en fuerte crecimiento. Demanda industrial estable." },
+    "miel":             { nombre: "Miel y Apicultura",             hs: "0409", certs: ["Organic","Fair Trade","Rainforest Alliance","Non-GMO","HACCP"],             canales: ["Retail gourmet","Tiendas naturistas","E-commerce","HORECA"],    tendencia: "Alta demanda de miel orgánica y de origen único. Mercados premium europeos, asiáticos y norteamericanos." },
+    "snacks_procesados":{ nombre: "Snacks y Procesados",           hs: "2106", certs: ["FSSC 22000","HACCP","Non-GMO","Organic","Kosher","Halal"],                   canales: ["Retail","E-commerce","Travel retail","Tiendas especializadas"], tendencia: "Boom de snacks saludables, funcionales y con ingredientes tropicales. Fuerte crecimiento en e-commerce." },
+    "especias_salsas":  { nombre: "Especias, Salsas y Condimentos",hs: "2103", certs: ["HACCP","Organic","Non-GMO","Kosher","Halal","FSSC 22000"],                  canales: ["Retail étnico","E-commerce","HORECA","Importadores"],           tendencia: "Creciente interés global por sabores latinoamericanos, picantes naturales y condimentos tropicales." },
+  },
+
+  requisitos: {
+    "Guatemala":      { organismo:"MAGA / MSPAS",                        arancel_cafe:0,  iva:12,   etiqueta:"Español — RTCA",         acuerdo:"MCCA / CAFTA-DR", docs:["Factura comercial","Lista de empaque","Certificado origen MCCA","Registro sanitario MSPAS","Certificado ICO (café)"],                                                                              nota:"✅ Arancel 0% para países SICA. Mercado común centroamericano." },
+    "Honduras":       { organismo:"SENASA / ARSA",                       arancel_cafe:0,  iva:15,   etiqueta:"Español — RTCA",         acuerdo:"MCCA / CAFTA-DR", docs:["Factura comercial","Lista de empaque","Certificado origen MCCA","Registro sanitario ARSA"],                                                                                                        nota:"✅ Arancel 0% para países SICA. Mayor importador intrarregional." },
+    "El Salvador":    { organismo:"MINSAL / MAG",                        arancel_cafe:0,  iva:13,   etiqueta:"Español — RTCA",         acuerdo:"MCCA / CAFTA-DR", docs:["Factura comercial","Lista de empaque","Certificado origen MCCA","Registro sanitario MINSAL"],                                                                                                      nota:"✅ Arancel 0% para países SICA. Economía dolarizada." },
+    "Nicaragua":      { organismo:"MINSA / IPSA",                        arancel_cafe:0,  iva:15,   etiqueta:"Español — RTCA",         acuerdo:"MCCA",            docs:["Factura comercial","Lista de empaque","Certificado origen MCCA","Registro sanitario MINSA"],                                                                                                       nota:"✅ Arancel 0% para países SICA. Controles fronterizos más estrictos." },
+    "Costa Rica":     { organismo:"SENASA / MINSA",                      arancel_cafe:0,  iva:13,   etiqueta:"Español — RTCA",         acuerdo:"MCCA / CAFTA-DR", docs:["Factura comercial","Lista de empaque","Certificado origen MCCA","Registro SENASA","Certificado ICO (café)"],                                                                                      nota:"✅ Arancel 0% para países SICA. Mercado más exigente en calidad." },
+    "Panamá":         { organismo:"APA — Agencia Panameña de Alimentos", arancel_cafe:54, iva:7,    etiqueta:"Español — Codex",        acuerdo:"TLC CR-Panamá (café excluido)", docs:["Formulario notif. importación","Certificado de origen","Factura comercial","Lista de empaque","Certificado libre venta","Documento transporte","Certificado ICO (café)"],           nota:"⚠️ Café tostado EXCLUIDO del TLC. Arancel 54% + IVA 7% encarece el producto 61%." },
+    "Belice":         { organismo:"Bureau of Standards / MOH",           arancel_cafe:13, iva:12.5, etiqueta:"INGLÉS obligatorio",     acuerdo:"CARICOM (parcial)",docs:["Factura comercial","Lista de empaque","Certificado de origen","Certificado sanitario exportación"],                                                                                              nota:"⚠️ Etiquetado en INGLÉS obligatorio. Mercado pequeño pero abierto." },
+    "Rep. Dominicana":{ organismo:"DIGESA — Ministerio de Salud",        arancel_cafe:20, iva:18,   etiqueta:"Español — NORDOM 53/559",acuerdo:"CAFTA-DR",         docs:["Certificado Origen CAFTA-DR","Factura comercial","Lista de empaque","Conocimiento de embarque","CLV legalizado consulado","Certificado ICO (café)"],                                            nota:"⚠️ Requiere representante local. Registro DIGESA previo. 20% arancel + 18% IVA." },
+  },
+
+  // Flujos TradeMap: [exportador, importador, sector, valor_miles_usd, crecimiento_pct]
+  flows: [
+    ["Belice","Guatemala","cacao",1.0,null],
+    ["Costa Rica","Panamá","cafe",1844.0,-64.0],
+    ["Costa Rica","Nicaragua","cafe",142.0,65.0],
+    ["Costa Rica","Belice","cafe",61.0,-17.0],
+    ["Costa Rica","Guatemala","cafe",6.0,-75.0],
+    ["Costa Rica","Panamá","cacao",1542.0,489.0],
+    ["Costa Rica","Nicaragua","cacao",1.0,null],
+    ["El Salvador","República Dominicana","cafe",323.0,-76.0],
+    ["El Salvador","Guatemala","cafe",123.0,1608.0],
+    ["El Salvador","Belice","cafe",118.0,32.0],
+    ["El Salvador","Nicaragua","cafe",42.0,null],
+    ["El Salvador","Honduras","cafe",7.0,null],
+    ["Guatemala","Costa Rica","cafe",2261.0,200.0],
+    ["Guatemala","El Salvador","cafe",1545.0,12.0],
+    ["Guatemala","República Dominicana","cafe",973.0,1926.0],
+    ["Guatemala","Belice","cafe",365.0,-19.0],
+    ["Guatemala","Panamá","cafe",154.0,43.0],
+    ["Guatemala","Honduras","cafe",114.0,91.0],
+    ["Guatemala","Nicaragua","cafe",74.0,-15.0],
+    ["Guatemala","Honduras","cacao",15.0,29.0],
+    ["Guatemala","El Salvador","cacao",8.0,null],
+    ["Guatemala","Nicaragua","bebidas_jugos",14681.0,16.0],
+    ["Guatemala","Honduras","bebidas_jugos",8016.0,12.0],
+    ["Guatemala","El Salvador","bebidas_jugos",7120.0,15.0],
+    ["Guatemala","Panamá","bebidas_jugos",6115.0,7.0],
+    ["Guatemala","Costa Rica","bebidas_jugos",1785.0,-31.0],
+    ["Guatemala","República Dominicana","bebidas_jugos",1253.0,-17.0],
+    ["Guatemala","Belice","bebidas_jugos",214.0,3.0],
+    ["Nicaragua","República Dominicana","cafe",10656.0,4089.0],
+    ["Nicaragua","Panamá","cafe",10519.0,21.0],
+    ["Nicaragua","Honduras","cafe",7777.0,442.0],
+    ["Nicaragua","Costa Rica","cafe",7631.0,-16.0],
+    ["Nicaragua","El Salvador","cafe",991.0,-16.0],
+    ["Nicaragua","Guatemala","cacao",2566.0,34.0],
+    ["Nicaragua","El Salvador","cacao",2071.0,37.0],
+    ["Nicaragua","Costa Rica","cacao",808.0,296.0],
+    ["Nicaragua","Honduras","cacao",197.0,46.0],
+    ["Rep. Dominicana","República Dominicana","cafe",846.0,-32.0],
+    ["Rep. Dominicana","Nicaragua","cafe",110.0,null],
+    ["Rep. Dominicana","Panamá","cacao",222.0,-2.0],
+    ["Guatemala","Nicaragua","bebidas_jugos",14681.0,16.0],
+    ["Guatemala","Honduras","bebidas_jugos",8016.0,12.0],
+    ["Guatemala","El Salvador","bebidas_jugos",7120.0,15.0],
+    ["Guatemala","Panamá","bebidas_jugos",6115.0,7.0],
+    ["Guatemala","Costa Rica","bebidas_jugos",1785.0,-31.0],
+    ["Guatemala","República Dominicana","bebidas_jugos",1253.0,-17.0],
+    ["Guatemala","Belice","bebidas_jugos",214.0,3.0],
+    ["El Salvador","Guatemala","bebidas_jugos",7605.0,-11.0],
+    ["El Salvador","Honduras","bebidas_jugos",4649.0,-3.0],
+    ["El Salvador","Panamá","bebidas_jugos",630.0,-60.0],
+    ["El Salvador","Costa Rica","bebidas_jugos",295.0,-68.0],
+    ["El Salvador","Nicaragua","bebidas_jugos",280.0,-19.0],
+    ["Rep. Dominicana","Costa Rica","bebidas_jugos",272.0,1191.0],
+    ["Rep. Dominicana","Panamá","bebidas_jugos",41.0,26.0],
+    ["Rep. Dominicana","República Dominicana","bebidas_jugos",17.0,161.0],
+    ["Rep. Dominicana","Honduras","bebidas_jugos",3.0,150.0],
+    ["Honduras","Nicaragua","bebidas_jugos",5516.0,24.0],
+    ["Honduras","El Salvador","bebidas_jugos",4632.0,-4.0],
+    ["Honduras","Guatemala","bebidas_jugos",860.0,12.0],
+    ["Honduras","República Dominicana","bebidas_jugos",357.0,-35.0],
+    ["Honduras","Panamá","bebidas_jugos",148.0,221.0],
+    ["Honduras","Costa Rica","cacao",768.0,-14.0],
+    ["Honduras","El Salvador","cacao",146.0,69.0],
+    ["Honduras","Guatemala","cacao",61.0,-13.0],
+    ["Honduras","República Dominicana","cafe",34064.0,4596.0],
+    ["Honduras","Costa Rica","cafe",16755.0,51.0],
+    ["Honduras","Guatemala","cafe",240.0,180.0],
+    ["Honduras","El Salvador","cafe",118.0,59.0],
+    ["Honduras","Belice","cafe",20.0,159.0],
+    ["Costa Rica","El Salvador","bebidas_jugos",3475.0,54.0],
+    ["Costa Rica","Honduras","bebidas_jugos",1970.0,67.0],
+    ["Costa Rica","Belice","bebidas_jugos",1740.0,110.0],
+    ["Costa Rica","Guatemala","bebidas_jugos",1568.0,57.0],
+    ["Costa Rica","Panamá","bebidas_jugos",1232.0,-60.0],
+    ["Costa Rica","República Dominicana","bebidas_jugos",533.0,-63.0],
+    ["Costa Rica","Nicaragua","bebidas_jugos",454.0,31.0],
+    ["Honduras","Guatemala","mariscos",50.0,null],
+    ["Costa Rica","El Salvador","mariscos",10295.0,-6.0],
+    ["Costa Rica","Panamá","mariscos",9601.0,0.0],
+    ["Costa Rica","Guatemala","mariscos",7290.0,18.0],
+    ["Costa Rica","Nicaragua","mariscos",6977.0,-1.0],
+    ["Costa Rica","Rep. Dominicana","mariscos",2818.0,18.0],
+    ["Costa Rica","Honduras","mariscos",1443.0,18.0],
+    ["Costa Rica","Belice","mariscos",56.0,null],
+    ["El Salvador","Costa Rica","mariscos",19819.0,4.0],
+    ["El Salvador","Panamá","mariscos",7312.0,6.0],
+    ["El Salvador","Guatemala","mariscos",3246.0,9.0],
+    ["El Salvador","Nicaragua","mariscos",1835.0,-15.0],
+    ["El Salvador","Honduras","mariscos",533.0,-22.0],
+    ["El Salvador","Rep. Dominicana","mariscos",269.0,84.0],
+    ["Guatemala","Rep. Dominicana","mariscos",926.0,653.0],
+    ["Guatemala","El Salvador","mariscos",345.0,0.0],
+    ["Guatemala","Nicaragua","mariscos",161.0,4.0],
+    ["Guatemala","Costa Rica","mariscos",82.0,22.0],
+    ["Guatemala","Costa Rica","miel",317.0,-32.0],
+    ["Guatemala","Honduras","miel",291.0,5.0],
+    ["Guatemala","Nicaragua","miel",22.0,-4.0],
+    ["El Salvador","Costa Rica","miel",1127.0,136.0],
+    ["El Salvador","Honduras","miel",142.0,-62.0],
+    ["Nicaragua","Costa Rica","miel",820.0,44.0]
+  ],
+};
+
+// ============================================================
+// GENERADOR DE PLAN - 100% local, sin API
+// ============================================================
+function generarPlan(empresa, producto, mercados) {
+  const sec = DB.sectores[empresa.sector] || {};
+  const anos = new Date().getFullYear() - parseInt(empresa.anio || 2020);
+  const mData = mercados.map(m => ({ pais: m, macro: DB.paises[m] || {}, req: DB.requisitos[m] || {} }));
+  const mercadosStr = mercados.join(" y ");
+  const tieneCerts = empresa.certs && empresa.certs.trim().length > 2;
+  const tieneExp = empresa.expExport && empresa.expExport.includes("regular") || empresa.expExport && empresa.expExport.includes("consolidado");
+
+  // FODA generado por plantillas inteligentes
+  const foda = {
+    fortalezas: [
+      `Producto ${sec.nombre} con propuesta de valor diferenciada: ${producto.ventajas || "calidad de origen y procesos controlados"}`,
+      tieneExp ? `Experiencia exportadora consolidada con ${anos} años de operación en mercados internacionales` : `Equipo con visión exportadora y ${anos} años de experiencia en el sector ${sec.nombre}`,
+      tieneCerts ? `Certificaciones internacionales vigentes (${empresa.certs}) que facilitan el acceso a mercados exigentes` : `Estándares de calidad e inocuidad alineados con requisitos de exportación`,
+      `Capacidad productiva disponible de ${parseInt(producto.capacidad||0).toLocaleString()} kg/mes con precio ExWork competitivo de $${producto.precio}/kg`,
+    ],
+    debilidades: [
+      `Notoriedad de marca limitada en los mercados objetivo (${mercadosStr}), requiere inversión en posicionamiento inicial`,
+      `Dependencia de la estacionalidad de la cosecha y volatilidad de precios de materias primas del sector ${sec.nombre}`,
+      `Recursos financieros acotados para expansión internacional simultánea en múltiples mercados`,
+    ],
+    oportunidades: [
+      `Crecimiento del comercio intrarregional SICA (+1.1% en 2024) con menor exposición a volatilidad externa`,
+      `Expansión del canal HORECA y retail premium en ${mercadosStr}, con demanda creciente de productos diferenciados`,
+      `Tendencia global hacia productos con trazabilidad, origen certificado y sostenibilidad alineada con ${sec.nombre}`,
+      `Acceso preferencial a mercados SICA a través del Marco del Mercado Común Centroamericano (MCCA)`,
+    ],
+    amenazas: [
+      `Competencia de productores locales consolidados en mercados destino con menores costes logísticos`,
+      `Impacto del cambio climático en la producción agroindustrial y volatilidad de rendimientos`,
+      `Barreras arancelarias y no arancelarias en mercados como Panamá (54%) y Rep. Dominicana (20%) para café tostado`,
+    ],
+  };
+
+  // Objetivo general
+  const objetivo = `Consolidar la presencia internacional de ${empresa.nombre} en los mercados de ${mercadosStr} mediante una estrategia escalonada de entrada, expansión y consolidación comercial, enfocada en ${producto.nombre}, priorizando los canales ${producto.canal || "HORECA y retail selectivo"}, con el fin de lograr un crecimiento sostenido y rentable alineado con el posicionamiento premium de la marca. El plan contempla un horizonte 2026-2028, con objetivos progresivos de captación de clientes e incremento de ingresos en la región SICA.`;
+
+  // Estrategia por mercado
+  const estrategia = {};
+  mData.forEach(({ pais, macro, req }) => {
+    const esGratis = req.arancel_cafe === 0;
+    const esPremium = macro.pib_percapita > 10000;
+    const esNuevo = !DB.flows.find(f => f[0] === empresa.pais && f[1] === pais && f[2] === empresa.sector && f[3]);
+
+    estrategia[pais] = `${pais} representa un mercado ${esPremium ? "premium con alto poder adquisitivo" : "con potencial de crecimiento"} (PIB per cápita $${macro.pib_percapita?.toLocaleString()}). ${esGratis ? `La ventaja del arancel 0% en el marco del MCCA elimina barreras de precio y facilita la competitividad del producto desde el primer envío.` : `El arancel de ${req.arancel_cafe}% requiere un posicionamiento en segmento premium para absorber el coste arancelario y mantener márgenes.`} La estrategia de entrada recomendada es a través de ${producto.canal?.includes("HORECA") ? "un importador especializado en canal HORECA con acceso a hoteles, restaurantes y cafeterías de alto nivel" : "un distribuidor especializado con experiencia en productos agroindustriales de calidad"}. ${esNuevo ? `Al ser un mercado nuevo, la prioridad es la identificación de un socio comercial de confianza y la realización de un pedido piloto para validar la aceptación del producto.` : `La presencia previa en este mercado permite escalar el portafolio y ampliar canales de distribución con menor riesgo.`}`;
+  });
+
+  // Posicionamiento
+  const posicionamiento = `${producto.nombre} se posiciona en ${mercadosStr} como un producto premium diferenciado del sector ${sec.nombre}, procedente de ${empresa.pais} con garantías de origen, calidad certificada${tieneCerts ? ` (${empresa.certs})` : ""} y trazabilidad real. La propuesta de valor combina ${producto.caract ? producto.caract.split(",")[0].trim() : "características organolépticas superiores"} con ${producto.ventajas ? producto.ventajas.split(".")[0].trim() : "innovación y compromiso con la sostenibilidad"}. El posicionamiento apunta a consumidores urbanos de ingresos medio-altos y cadenas HORECA que valoran el origen, la autenticidad y la responsabilidad social, segmentos en crecimiento en ambos mercados objetivo.`;
+
+  // Brechas
+  const brechas = [
+    { area: "Normativa y certificaciones", brecha: `Pendiente tramitar registros sanitarios en ${mercadosStr} y disponer de Certificado de Libre Venta actualizado`, accion: "Iniciar trámites con representante local en cada mercado destino con 90 días de antelación al primer envío" },
+    { area: "Comercialización y marca", brecha: `Notoriedad de marca inicial baja en ${mercadosStr}; el producto y la empresa son desconocidos para compradores locales`, accion: `Participar en ferias especializadas (${empresa.sector === "cafe" ? "Expo Alimentaria, Dominican Coffee Festival, ExpoHoreca" : "Expo Alimentaria SICA, ferias sectoriales regionales"}) y realizar misiones comerciales B2B` },
+    { area: "Finanzas y capital de trabajo", brecha: "La apertura de mercados internacionales implica ciclos de cobro más largos (60-90 días) y costes iniciales de certificación y logística", accion: `Explorar programas de apoyo a la exportación de ${DB.paises[empresa.pais]?.agencia || "la agencia nacional de exportaciones"} y líneas de crédito exportador` },
+  ];
+
+  // Próximos pasos
+  const pasos = [
+    `Identificar y contactar importadores o distribuidores especializados en ${mercadosStr} con experiencia en ${sec.nombre}`,
+    `Iniciar trámites de registro sanitario y obtener Certificado de Libre Venta para cada mercado destino`,
+    `Preparar material comercial adaptado por mercado: catálogo, ficha técnica, presentación B2B y muestras del producto`,
+    `Participar en la próxima feria sectorial de la región SICA para generar contactos cualificados y visibilidad de marca`,
+  ];
+
+  return { foda, objetivo, estrategia, posicionamiento, brechas, pasos };
+}
+
+// ============================================================
+// SCORING DE MERCADOS
+// ============================================================
+function calcularScoring(paisOrigen, sector) {
+  return Object.keys(DB.paises).filter(p => p !== paisOrigen).map(destino => {
+    const macro = DB.paises[destino];
+    const req = DB.requisitos[destino] || {};
+    const flow = DB.flows.find(f => f[0] === paisOrigen && f[1] === destino && f[2] === sector);
+
+    let sValor = 5;
+    if (flow && flow[3]) { const v = flow[3]; sValor = v>10000?10:v>3000?8:v>1000?6:v>100?4:2; }
+    let sCrecim = 5;
+    if (flow && flow[4] != null) { const c = flow[4]; sCrecim = c>50?10:c>20?8:c>5?6:c>0?4:2; }
+    const logMap = {"Guatemala":8,"Honduras":8,"El Salvador":8,"Nicaragua":9,"Costa Rica":7,"Panamá":10,"Belice":7,"Rep. Dominicana":7};
+    const sLog = logMap[destino] || 5;
+    const sComp = macro.pib_percapita>15000?9:macro.pib_percapita>10000?8:macro.pib_percapita>6000?7:macro.pib_percapita>3000?5:4;
+    const ar = req.arancel_cafe || 0;
+    const sFacil = ar>40?4:ar>15?6:ar===0?10:7;
+    const sOtros = macro.imp_intra>3000?10:macro.imp_intra>2000?9:macro.imp_intra>1000?7:macro.imp_intra>500?6:macro.imp_intra>100?4:3;
+    const total = sValor*0.25 + sCrecim*0.05 + sLog*0.10 + sComp*0.10 + sFacil*0.10 + sOtros*0.40;
+
+    return { pais:destino, total:Math.round(total*10)/10, sValor, sCrecim, sLog, sComp, sFacil, sOtros, flow, macro, req };
+  }).sort((a,b) => b.total - a.total);
+}
+
+// ============================================================
+// ESTILOS
+// ============================================================
+const C = {
+  bg:"#0a0f1e", card:"#111827", border:"#1e2d40",
+  accent:"#00d4ff", green:"#00ff88", orange:"#ff6b35",
+  text:"#e2e8f0", muted:"#64748b", dim:"#94a3b8",
+};
+
+const gCSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:${C.bg};color:${C.text};font-family:'Space Grotesk',sans-serif;}
+  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#0a0f1e}::-webkit-scrollbar-thumb{background:#1e2d40;border-radius:3px}
+  input,select,textarea{font-family:'Space Grotesk',sans-serif;}
+  @keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .fi{animation:fi 0.3s ease forwards}
+  @media print{.np{display:none!important}.pf{width:100%!important;max-width:none!important;padding:0!important}}
+`;
+
+// ============================================================
+// COMPONENTES UI
+// ============================================================
+const Badge = ({ children, color=C.accent }) => (
+  <span style={{background:color+"22",color,border:`1px solid ${color}44`,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700,letterSpacing:0.5,fontFamily:"'JetBrains Mono'",whiteSpace:"nowrap"}}>{children}</span>
+);
+const Card = ({ children, style={} }) => (
+  <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:20,...style}}>{children}</div>
+);
+const Inp = ({ label, value, onChange, placeholder, type="text", req }) => (
+  <div style={{marginBottom:13}}>
+    <label style={{display:"block",fontSize:11,color:C.dim,marginBottom:5,fontWeight:700,letterSpacing:0.5,textTransform:"uppercase"}}>{label}{req&&<span style={{color:C.orange}}> *</span>}</label>
+    <input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
+      style={{width:"100%",background:"#0d1623",border:`1px solid ${C.border}`,borderRadius:7,padding:"9px 13px",color:C.text,fontSize:14,outline:"none"}}
+      onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
+  </div>
+);
+const Sel = ({ label, value, onChange, options, req }) => (
+  <div style={{marginBottom:13}}>
+    <label style={{display:"block",fontSize:11,color:C.dim,marginBottom:5,fontWeight:700,letterSpacing:0.5,textTransform:"uppercase"}}>{label}{req&&<span style={{color:C.orange}}> *</span>}</label>
+    <select value={value} onChange={e=>onChange(e.target.value)} style={{width:"100%",background:"#0d1623",border:`1px solid ${C.border}`,borderRadius:7,padding:"9px 13px",color:value?C.text:C.muted,fontSize:14,outline:"none",cursor:"pointer"}}>
+      <option value="">Seleccionar...</option>
+      {options.map(o=><option key={o.value||o} value={o.value||o}>{o.label||o}</option>)}
+    </select>
+  </div>
+);
+const TA = ({ label, value, onChange, placeholder, rows=3 }) => (
+  <div style={{marginBottom:13}}>
+    <label style={{display:"block",fontSize:11,color:C.dim,marginBottom:5,fontWeight:700,letterSpacing:0.5,textTransform:"uppercase"}}>{label}</label>
+    <textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows}
+      style={{width:"100%",background:"#0d1623",border:`1px solid ${C.border}`,borderRadius:7,padding:"9px 13px",color:C.text,fontSize:14,outline:"none",resize:"vertical"}}
+      onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
+  </div>
+);
+const Btn = ({ children, onClick, disabled, secondary }) => (
+  <button onClick={onClick} disabled={disabled} style={{background:secondary?"transparent":disabled?C.border:C.accent,color:secondary?C.dim:disabled?C.muted:"#000",border:secondary?`1px solid ${C.border}`:"none",borderRadius:8,padding:"11px 28px",fontSize:14,fontWeight:700,cursor:disabled?"not-allowed":"pointer",fontFamily:"'Space Grotesk'",transition:"all 0.2s"}}>{children}</button>
+);
+const ScoreBar = ({ label, value, color=C.accent }) => (
+  <div style={{marginBottom:7}}>
+    <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+      <span style={{fontSize:12,color:C.dim}}>{label}</span>
+      <span style={{fontSize:12,color,fontWeight:700,fontFamily:"'JetBrains Mono'"}}>{value}/10</span>
+    </div>
+    <div style={{height:3,background:"#1e2d40",borderRadius:2}}>
+      <div style={{height:"100%",width:`${value*10}%`,background:color,borderRadius:2,transition:"width 0.6s"}}/>
+    </div>
+  </div>
+);
+const Steps = ["Empresa","Producto","Mercados","Financiero","Plan"];
+const ProgressBar = ({ step }) => (
+  <div style={{display:"flex",gap:6,marginBottom:28}} className="np">
+    {Steps.map((s,i)=>(
+      <div key={s} style={{flex:1,textAlign:"center"}}>
+        <div style={{height:3,background:i<=step?C.accent:C.border,borderRadius:2,marginBottom:5,transition:"background 0.3s"}}/>
+        <span style={{fontSize:11,color:i===step?C.accent:i<step?C.green:C.muted,fontWeight:i===step?700:400}}>{s}</span>
+      </div>
+    ))}
+  </div>
+);
+
+// ============================================================
+// PASO 1: EMPRESA
+// ============================================================
+function StepEmpresa({ d, set, next }) {
+  const ok = d.nombre && d.pais && d.anio && d.sector;
+  return (
+    <div className="fi">
+      <h2 style={{fontSize:20,fontWeight:800,marginBottom:4}}>Datos de la Empresa</h2>
+      <p style={{color:C.dim,marginBottom:22,fontSize:13}}>Información básica para contextualizar tu plan de internacionalización.</p>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+        <div style={{gridColumn:"1/-1"}}><Inp label="Nombre legal de la empresa" value={d.nombre} onChange={v=>set("nombre",v)} placeholder="Ej: Exportaciones del Valle, S.A." req/></div>
+        <Inp label="Nombre comercial" value={d.comercial} onChange={v=>set("comercial",v)} placeholder="Ej: ValleFoods"/>
+        <Sel label="País de origen" value={d.pais} onChange={v=>set("pais",v)} options={Object.keys(DB.paises)} req/>
+        <Inp label="Año de fundación" type="number" value={d.anio} onChange={v=>set("anio",v)} placeholder="Ej: 2018" req/>
+        <Sel label="Sector agroindustrial" value={d.sector} onChange={v=>set("sector",v)} options={Object.entries(DB.sectores).map(([k,v])=>({value:k,label:v.nombre}))} req/>
+        <Sel label="Tipo de empresa" value={d.tipo} onChange={v=>set("tipo",v)} options={["Microempresa (<10 empleados)","PYME (10-100 empleados)","Empresa mediana (100-500)","Empresa grande (>500)"]}/>
+        <div style={{gridColumn:"1/-1"}}><Sel label="Experiencia exportadora" value={d.expExport} onChange={v=>set("expExport",v)} options={["Sin experiencia exportadora","Exportaciones ocasionales","Exportaciones regulares (1-3 mercados)","Exportador consolidado (>3 mercados)"]}/></div>
+        <div style={{gridColumn:"1/-1"}}><TA label="Certificaciones actuales (separadas por comas)" value={d.certs} onChange={v=>set("certs",v)} placeholder="Ej: HACCP, Rainforest Alliance, Organic, Women-Owned..." rows={2}/></div>
+        <div style={{gridColumn:"1/-1"}}><TA label="Descripción de la empresa (misión y diferenciadores clave)" value={d.desc} onChange={v=>set("desc",v)} placeholder="Ej: Empresa especializada en café gourmet de origen único con trazabilidad real y liderazgo femenino..." rows={3}/></div>
+      </div>
+      <div style={{marginTop:20}}><Btn onClick={next} disabled={!ok}>Siguiente →</Btn></div>
+    </div>
+  );
+}
+
+// ============================================================
+// PASO 2: PRODUCTO
+// ============================================================
+function StepProducto({ d, set, empresa, next, back }) {
+  const sec = DB.sectores[empresa.sector] || {};
+  const ok = d.nombre && d.precio && d.capacidad;
+  return (
+    <div className="fi">
+      <h2 style={{fontSize:20,fontWeight:800,marginBottom:4}}>Oferta Exportable</h2>
+      <p style={{color:C.dim,marginBottom:20,fontSize:13}}>Define tu producto y su propuesta de valor para la exportación.</p>
+      <Card style={{marginBottom:18,borderColor:C.accent+"33"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+          <Badge color={C.accent}>{sec.hs}</Badge>
+          <span style={{fontWeight:700}}>{sec.nombre}</span>
+        </div>
+        <p style={{fontSize:13,color:C.dim,marginBottom:10}}>{sec.tendencia}</p>
+        <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{(sec.certs||[]).map(c=><Badge key={c} color={C.green}>{c}</Badge>)}</div>
+      </Card>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+        <div style={{gridColumn:"1/-1"}}><Inp label="Nombre del producto exportable" value={d.nombre} onChange={v=>set("nombre",v)} placeholder="Ej: Drip Coffee San Ramón Origen Único" req/></div>
+        <Inp label="Precio ExWork (USD/kg)" type="number" value={d.precio} onChange={v=>set("precio",v)} placeholder="Ej: 32.50" req/>
+        <Inp label="Capacidad exportable mensual (kg)" type="number" value={d.capacidad} onChange={v=>set("capacidad",v)} placeholder="Ej: 5000" req/>
+        <div style={{gridColumn:"1/-1"}}><TA label="Características principales del producto" value={d.caract} onChange={v=>set("caract",v)} placeholder="Ej: SCA 84, proceso honey, notas manzana y chocolate, 250g/900g, empaque reciclable..." rows={2}/></div>
+        <div style={{gridColumn:"1/-1"}}><TA label="Ventajas competitivas y diferenciadores clave" value={d.ventajas} onChange={v=>set("ventajas",v)} placeholder="Ej: Única tecnología japonesa para drip coffee en Latinoamérica, trazabilidad real, Women-Owned..." rows={2}/></div>
+        <Sel label="Formato / envase principal" value={d.formato} onChange={v=>set("formato",v)} options={["Granel / saco","Bolsa 250g","Bolsa 500g-1kg","Caja single serve / sachet","Formato institucional (5kg+)","Frasco / tarro","Tetra pack / botella","Otro"]}/>
+        <Sel label="Canal de distribución preferido" value={d.canal} onChange={v=>set("canal",v)} options={["HORECA (hoteles, restaurantes, cafeterías)","Retail premium / supermercados","E-commerce","Distribuidor general","Industria alimentaria","Travel retail","Sin preferencia definida"]}/>
+      </div>
+      <div style={{display:"flex",gap:10,marginTop:20}}>
+        <Btn onClick={back} secondary>← Atrás</Btn>
+        <Btn onClick={next} disabled={!ok}>Calcular Mercados →</Btn>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// PASO 3: MERCADOS
+// ============================================================
+function StepMercados({ empresa, next, back, sel, setSel }) {
+  const scoring = calcularScoring(empresa.pais, empresa.sector);
+  const [exp, setExp] = useState(null);
+  const toggle = p => sel.includes(p) ? setSel(sel.filter(x=>x!==p)) : sel.length<3 && setSel([...sel,p]);
+  const tc = t => t>=8?C.green:t>=6?C.accent:t>=4?"#f59e0b":C.orange;
+
+  return (
+    <div className="fi">
+      <h2 style={{fontSize:20,fontWeight:800,marginBottom:4}}>Selección de Mercados</h2>
+      <p style={{color:C.dim,marginBottom:4,fontSize:13}}>
+        Ranking calculado con datos reales TradeMap 2025 · <strong style={{color:C.accent}}>{DB.sectores[empresa.sector]?.nombre}</strong> desde <strong style={{color:C.accent}}>{empresa.pais}</strong>
+      </p>
+      <p style={{color:C.green,fontSize:13,marginBottom:20}}>Selecciona hasta 3 mercados. Haz clic en cada país para ver el detalle completo.</p>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {scoring.map((s,i)=>{
+          const selected = sel.includes(s.pais);
+          const isExp = exp===s.pais;
+          return (
+            <div key={s.pais} style={{border:`1px solid ${selected?C.accent:C.border}`,borderRadius:10,overflow:"hidden",background:selected?C.accent+"08":C.card,transition:"all 0.2s"}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",cursor:"pointer"}} onClick={()=>setExp(isExp?null:s.pais)}>
+                <div style={{width:26,height:26,borderRadius:"50%",background:tc(s.total)+"22",display:"flex",alignItems:"center",justifyContent:"center",color:tc(s.total),fontWeight:800,fontSize:12,fontFamily:"'JetBrains Mono'",flexShrink:0}}>{i+1}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:15}}>{s.pais}</div>
+                  <div style={{fontSize:11,color:C.dim}}>PIB/cápita: ${s.macro.pib_percapita?.toLocaleString()} · Importaciones intrareg.: ${s.macro.imp_intra?.toLocaleString()}M USD</div>
+                </div>
+                <div style={{textAlign:"center",minWidth:50}}>
+                  <div style={{fontSize:22,fontWeight:900,color:tc(s.total),fontFamily:"'JetBrains Mono'"}}>{s.total}</div>
+                  <div style={{fontSize:9,color:C.muted}}>/ 10</div>
+                </div>
+                <button onClick={e=>{e.stopPropagation();toggle(s.pais);}} style={{background:selected?C.accent:"transparent",color:selected?"#000":C.accent,border:`1px solid ${C.accent}`,borderRadius:6,padding:"5px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Space Grotesk'",flexShrink:0}}>
+                  {selected?"✓ Seleccionado":"+ Añadir"}
+                </button>
+              </div>
+              {isExp && (
+                <div style={{padding:"0 16px 16px",borderTop:`1px solid ${C.border}`}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginTop:14}}>
+                    <div>
+                      <p style={{fontSize:11,fontWeight:700,color:C.dim,marginBottom:10,textTransform:"uppercase",letterSpacing:0.5}}>Puntuación por criterio</p>
+                      <ScoreBar label="Volumen demanda (25%)" value={s.sValor} color={C.accent}/>
+                      <ScoreBar label="Crecimiento demanda (5%)" value={s.sCrecim} color={C.accent}/>
+                      <ScoreBar label="Logística (10%)" value={s.sLog} color={C.green}/>
+                      <ScoreBar label="Condiciones competitivas (10%)" value={s.sComp} color={C.green}/>
+                      <ScoreBar label="Facilidad operativa (10%)" value={s.sFacil} color="#f59e0b"/>
+                      <ScoreBar label="Tamaño mercado intra (40%)" value={s.sOtros} color={C.orange}/>
+                    </div>
+                    <div>
+                      <p style={{fontSize:11,fontWeight:700,color:C.dim,marginBottom:10,textTransform:"uppercase",letterSpacing:0.5}}>Datos clave del mercado</p>
+                      {s.flow&&s.flow[3] ? (
+                        <div style={{background:"#0d1623",borderRadius:8,padding:10,marginBottom:10}}>
+                          <div style={{fontSize:12,color:C.dim,marginBottom:3}}>Exportaciones actuales a este mercado:</div>
+                          <div style={{fontSize:20,fontWeight:800,color:C.accent,fontFamily:"'JetBrains Mono'"}}>${s.flow[3]?.toLocaleString()}K USD</div>
+                          {s.flow[4]!=null&&<div style={{fontSize:12,color:s.flow[4]>0?C.green:C.orange}}>Variación 2024→2025: {s.flow[4]>0?"+":""}{s.flow[4]}%</div>}
+                        </div>
+                      ) : (
+                        <div style={{background:"#0d1623",borderRadius:8,padding:10,marginBottom:10,color:C.muted,fontSize:13}}>Sin exportaciones registradas → mercado nuevo a desarrollar</div>
+                      )}
+                      <div style={{fontSize:12,display:"flex",flexDirection:"column",gap:5}}>
+                        <div><span style={{color:C.dim}}>Arancel: </span><Badge color={s.req.arancel_cafe===0?C.green:C.orange}>{s.req.arancel_cafe??'N/D'}%</Badge></div>
+                        <div><span style={{color:C.dim}}>IVA importación: </span><span>{s.req.iva??'N/D'}%</span></div>
+                        <div><span style={{color:C.dim}}>Organismo sanitario: </span><span>{s.req.organismo}</span></div>
+                        <div><span style={{color:C.dim}}>Acuerdo comercial: </span><span>{s.req.acuerdo}</span></div>
+                      </div>
+                      {s.req.nota&&<div style={{fontSize:12,color:s.req.nota.startsWith("✅")?C.green:C.orange,background:(s.req.nota.startsWith("✅")?C.green:C.orange)+"11",borderRadius:6,padding:8,marginTop:8}}>{s.req.nota}</div>}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{display:"flex",gap:10,marginTop:20}}>
+        <Btn onClick={back} secondary>← Atrás</Btn>
+        <Btn onClick={next} disabled={sel.length===0}>Siguiente ({sel.length} seleccionados) →</Btn>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// PASO 4: FINANCIERO
+// ============================================================
+function StepFinanciero({ d, set, mercados, next, back }) {
+  return (
+    <div className="fi">
+      <h2 style={{fontSize:20,fontWeight:800,marginBottom:4}}>Datos Financieros</h2>
+      <p style={{color:C.dim,marginBottom:22,fontSize:13}}>Información confidencial de la empresa para el análisis de viabilidad financiera del plan.</p>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:4}}>
+        <Inp label="Ventas totales 2024 (USD)" type="number" value={d.ventas} onChange={v=>set("ventas",v)} placeholder="Ej: 500000" req/>
+        <Inp label="% ventas exportación actual" type="number" value={d.pctExp} onChange={v=>set("pctExp",v)} placeholder="Ej: 50"/>
+        <Inp label="Margen bruto del producto (%)" type="number" value={d.margen} onChange={v=>set("margen",v)} placeholder="Ej: 35"/>
+        <Inp label="Presupuesto internacionalización (USD)" type="number" value={d.presupuesto} onChange={v=>set("presupuesto",v)} placeholder="Ej: 55000"/>
+      </div>
+      <Card style={{marginBottom:14,borderColor:C.green+"33"}}>
+        <p style={{fontSize:13,fontWeight:700,color:C.green,marginBottom:12}}>Proyección de nuevos clientes 2026–2028</p>
+        {mercados.map(m=>(
+          <div key={m} style={{display:"grid",gridTemplateColumns:"150px 1fr 1fr 1fr",gap:8,alignItems:"center",marginBottom:8}}>
+            <span style={{fontSize:13,fontWeight:600}}>{m}</span>
+            {[2026,2027,2028].map(y=>(
+              <div key={y}>
+                <label style={{display:"block",fontSize:10,color:C.muted,marginBottom:2}}>{y}</label>
+                <input type="number" min="0" value={d.clientes?.[m]?.[y]||""} onChange={e=>set("clientes",{...d.clientes,[m]:{...(d.clientes?.[m]||{}),[y]:e.target.value}})} placeholder="0"
+                  style={{width:"100%",background:"#0d1623",border:`1px solid ${C.border}`,borderRadius:6,padding:"6px 8px",color:C.text,fontSize:13,outline:"none"}}/>
+              </div>
+            ))}
+          </div>
+        ))}
+      </Card>
+      <Card style={{marginBottom:14,borderColor:"#f59e0b33"}}>
+        <p style={{fontSize:13,fontWeight:700,color:"#f59e0b",marginBottom:12}}>Estimación de ingresos en nuevos mercados (USD)</p>
+        {mercados.map(m=>(
+          <div key={m} style={{display:"grid",gridTemplateColumns:"150px 1fr 1fr 1fr",gap:8,alignItems:"center",marginBottom:8}}>
+            <span style={{fontSize:13,fontWeight:600}}>{m}</span>
+            {[2026,2027,2028].map(y=>(
+              <div key={y}>
+                <label style={{display:"block",fontSize:10,color:C.muted,marginBottom:2}}>{y}</label>
+                <input type="number" min="0" value={d.ingresos?.[m]?.[y]||""} onChange={e=>set("ingresos",{...d.ingresos,[m]:{...(d.ingresos?.[m]||{}),[y]:e.target.value}})} placeholder="0"
+                  style={{width:"100%",background:"#0d1623",border:`1px solid ${C.border}`,borderRadius:6,padding:"6px 8px",color:C.text,fontSize:13,outline:"none"}}/>
+              </div>
+            ))}
+          </div>
+        ))}
+      </Card>
+      <div style={{display:"flex",gap:10}}>
+        <Btn onClick={back} secondary>← Atrás</Btn>
+        <Btn onClick={next} disabled={!d.ventas}>Generar Plan →</Btn>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// PASO 5: PLAN GENERADO - 100% sin API
+// ============================================================
+function PlanGenerado({ empresa, producto, mercados, fin, scoring }) {
+  const [tab, setTab] = useState("resumen");
+  const sec = DB.sectores[empresa.sector] || {};
+  const macroO = DB.paises[empresa.pais] || {};
+  const anos = new Date().getFullYear() - parseInt(empresa.anio || 2020);
+  const mData = mercados.map(m=>({pais:m,macro:DB.paises[m]||{},req:DB.requisitos[m]||{},score:scoring.find(s=>s.pais===m)}));
+  const plan = generarPlan(empresa, producto, mercados);
+
+  const totIng = y => mercados.reduce((s,m)=>s+parseFloat(fin.ingresos?.[m]?.[y]||0),0);
+  const totCli = y => mercados.reduce((s,m)=>s+parseInt(fin.clientes?.[m]?.[y]||0),0);
+
+  const TABS = [["resumen","Resumen"],["contexto","Contexto"],["empresa","Empresa"],["mercados","Mercados"],["estrategia","Estrategia"],["operativo","Plan Operativo"],["financiero","Financiero"]];
+
+  return (
+    <div className="fi">
+      {/* Header */}
+      <div style={{background:`linear-gradient(135deg,${C.accent}11,${C.green}08)`,border:`1px solid ${C.accent}33`,borderRadius:12,padding:20,marginBottom:20}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:10}}>
+          <div>
+            <Badge color={C.accent}>EKO BOOTCAMP 3.0 — SICA</Badge>
+            <h1 style={{fontSize:24,fontWeight:900,marginTop:8,marginBottom:3}}>Plan de Internacionalización</h1>
+            <h2 style={{fontSize:17,color:C.accent,fontWeight:700}}>{empresa.nombre}</h2>
+            <p style={{color:C.dim,fontSize:12,marginTop:3}}>{sec.nombre} · {empresa.pais} · {new Date().toLocaleDateString("es-ES",{month:"long",year:"numeric"})}</p>
+          </div>
+          <button onClick={()=>window.print()} className="np"
+            style={{background:C.green+"22",color:C.green,border:`1px solid ${C.green}44`,borderRadius:8,padding:"8px 16px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Space Grotesk'"}}>
+            🖨️ Imprimir / PDF
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{display:"flex",gap:4,marginBottom:18,overflowX:"auto",paddingBottom:4}} className="np">
+        {TABS.map(([id,label])=>(
+          <button key={id} onClick={()=>setTab(id)} style={{background:tab===id?C.accent:"transparent",color:tab===id?"#000":C.dim,border:`1px solid ${tab===id?C.accent:C.border}`,borderRadius:6,padding:"6px 13px",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"'Space Grotesk'"}}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* RESUMEN */}
+      {tab==="resumen"&&<div className="fi">
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:18}}>
+          {[{l:"Mercados Objetivo",v:mercados.length,s:mercados.join(", "),c:C.accent},{l:"Sector",v:sec.nombre,s:`HS ${sec.hs}`,c:C.green},{l:"Ingresos Proyect. 2028",v:`$${totIng(2028).toLocaleString()}`,s:`${totCli(2028)} clientes`,c:"#f59e0b"}].map(i=>(
+            <Card key={i.l} style={{textAlign:"center",borderColor:i.c+"33"}}>
+              <div style={{fontSize:11,color:C.muted,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>{i.l}</div>
+              <div style={{fontSize:18,fontWeight:900,color:i.c}}>{i.v}</div>
+              <div style={{fontSize:11,color:C.dim,marginTop:3}}>{i.s}</div>
+            </Card>
+          ))}
+        </div>
+        <Card style={{marginBottom:14}}>
+          <h3 style={{fontSize:13,fontWeight:700,color:C.accent,marginBottom:8,textTransform:"uppercase",letterSpacing:0.5}}>Objetivo General</h3>
+          <p style={{fontSize:14,lineHeight:1.75,color:C.dim}}>{plan.objetivo}</p>
+        </Card>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          {[["fortalezas","FORTALEZAS",C.green,"+"],[" debilidades","DEBILIDADES",C.orange,"−"],["oportunidades","OPORTUNIDADES",C.accent,"+"],[" amenazas","AMENAZAS","#f59e0b","⚠"]].map(([k,lbl,col,ic])=>(
+            <Card key={k} style={{borderColor:col+"33"}}>
+              <h4 style={{fontSize:11,fontWeight:800,color:col,marginBottom:8,letterSpacing:1}}>{lbl}</h4>
+              {(plan.foda[k.trim()]||[]).map((it,i)=>(
+                <div key={i} style={{display:"flex",gap:7,marginBottom:6,fontSize:13,color:C.dim,lineHeight:1.5}}>
+                  <span style={{color:col,fontWeight:800,flexShrink:0}}>{ic}</span>{it}
+                </div>
+              ))}
+            </Card>
+          ))}
+        </div>
+      </div>}
+
+      {/* CONTEXTO */}
+      {tab==="contexto"&&<div className="fi">
+        <Card style={{marginBottom:14}}>
+          <h3 style={{fontSize:13,fontWeight:700,color:C.accent,marginBottom:14,textTransform:"uppercase",letterSpacing:0.5}}>País de Origen: {empresa.pais}</h3>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
+            {[["Población",macroO.poblacion?.toLocaleString()],["PIB (USD M)",`$${macroO.pib_musd?.toLocaleString()}`],["PIB per cápita",`$${macroO.pib_percapita?.toLocaleString()}`],["Crecimiento PIB",`${macroO.crecimiento}%`],["Export. totales",`$${macroO.exp_total?.toLocaleString()}M`],["Import. totales",`$${macroO.imp_total?.toLocaleString()}M`],["Export. intrareg.",`$${macroO.exp_intra?.toLocaleString()}M`],["Agencia export.",macroO.agencia]].map(([k,v])=>(
+              <div key={k} style={{background:"#0d1623",borderRadius:7,padding:10}}>
+                <div style={{fontSize:10,color:C.muted,marginBottom:3}}>{k}</div>
+                <div style={{fontSize:13,fontWeight:700}}>{v}</div>
+              </div>
+            ))}
+          </div>
+          <p style={{fontSize:13,color:C.dim,marginTop:12,lineHeight:1.6}}>{macroO.nota}</p>
+        </Card>
+        <Card>
+          <h3 style={{fontSize:13,fontWeight:700,color:C.accent,marginBottom:12,textTransform:"uppercase",letterSpacing:0.5}}>Sector: {sec.nombre}</h3>
+          <p style={{fontSize:14,lineHeight:1.7,color:C.dim,marginBottom:12}}>{sec.tendencia}</p>
+          <div style={{display:"flex",gap:14,flexWrap:"wrap"}}>
+            <div><p style={{fontSize:11,color:C.muted,marginBottom:5}}>Certificaciones clave:</p><div style={{display:"flex",flexWrap:"wrap",gap:5}}>{(sec.certs||[]).map(c=><Badge key={c} color={C.green}>{c}</Badge>)}</div></div>
+            <div><p style={{fontSize:11,color:C.muted,marginBottom:5}}>Canales principales:</p><div style={{display:"flex",flexWrap:"wrap",gap:5}}>{(sec.canales||[]).map(c=><Badge key={c} color={C.accent}>{c}</Badge>)}</div></div>
+          </div>
+        </Card>
+      </div>}
+
+      {/* EMPRESA */}
+      {tab==="empresa"&&<div className="fi">
+        <Card style={{marginBottom:14}}>
+          <h3 style={{fontSize:13,fontWeight:700,color:C.accent,marginBottom:14,textTransform:"uppercase",letterSpacing:0.5}}>Perfil de la Empresa</h3>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+            <div>{[["Nombre legal",empresa.nombre],["Nombre comercial",empresa.comercial||empresa.nombre],["País de origen",empresa.pais],["Año de fundación",empresa.anio],["Años en operación",anos],["Tipo de empresa",empresa.tipo||"No especificado"]].map(([k,v])=>(
+              <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"7px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}>
+                <span style={{color:C.dim}}>{k}</span><span style={{fontWeight:600}}>{v}</span>
+              </div>
+            ))}</div>
+            <div>{[["Sector",sec.nombre],["Código HS",sec.hs],["Exp. exportadora",empresa.expExport||"No especificada"],["Certificaciones",empresa.certs||"En proceso"],["Ventas 2024",fin.ventas?`$${parseInt(fin.ventas).toLocaleString()}`:"No indicadas"],["% exportación actual",fin.pctExp?`${fin.pctExp}%`:"No indicado"]].map(([k,v])=>(
+              <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"7px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}>
+                <span style={{color:C.dim}}>{k}</span><span style={{fontWeight:600}}>{v}</span>
+              </div>
+            ))}</div>
+          </div>
+          {empresa.desc&&<p style={{fontSize:13,color:C.dim,marginTop:14,lineHeight:1.7,padding:12,background:"#0d1623",borderRadius:7}}>{empresa.desc}</p>}
+        </Card>
+        <Card>
+          <h3 style={{fontSize:13,fontWeight:700,color:C.accent,marginBottom:12,textTransform:"uppercase",letterSpacing:0.5}}>Oferta Exportable</h3>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+            {[["Producto",producto.nombre],["Precio ExWork",`$${producto.precio}/kg`],["Capacidad mensual",`${parseInt(producto.capacidad||0).toLocaleString()} kg`],["Formato",producto.formato||"—"],["Canal preferido",producto.canal||"—"]].map(([k,v])=>(
+              <div key={k} style={{background:"#0d1623",borderRadius:7,padding:10}}>
+                <div style={{fontSize:10,color:C.muted,marginBottom:3}}>{k}</div>
+                <div style={{fontSize:13,fontWeight:600}}>{v}</div>
+              </div>
+            ))}
+          </div>
+          {producto.caract&&<p style={{fontSize:13,color:C.dim,lineHeight:1.6,marginBottom:8}}><strong style={{color:C.dim}}>Características:</strong> {producto.caract}</p>}
+          {producto.ventajas&&<p style={{fontSize:13,color:C.dim,lineHeight:1.6}}><strong style={{color:C.dim}}>Ventajas:</strong> {producto.ventajas}</p>}
+        </Card>
+      </div>}
+
+      {/* MERCADOS */}
+      {tab==="mercados"&&<div className="fi">
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:14}}>
+          {mData.map(({pais,macro,req,score})=>(
+            <Card key={pais} style={{borderColor:C.accent+"44"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                <h3 style={{fontSize:16,fontWeight:800}}>{pais}</h3>
+                {score&&<div style={{fontSize:20,fontWeight:900,color:C.accent,fontFamily:"'JetBrains Mono'"}}>{score.total}/10</div>}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+                {[["PIB/cápita",`$${macro.pib_percapita?.toLocaleString()}`],["Crecim. PIB",`${macro.crecimiento}%`],["Import. intra",`$${macro.imp_intra?.toLocaleString()}M`],["Arancel",`${req.arancel_cafe}%`],["IVA",`${req.iva}%`],["Idioma etiqueta",req.etiqueta?.split("—")[0]?.trim()]].map(([k,v])=>(
+                  <div key={k} style={{background:"#0d1623",borderRadius:6,padding:"8px 10px"}}>
+                    <div style={{fontSize:10,color:C.muted,marginBottom:2}}>{k}</div>
+                    <div style={{fontSize:12,fontWeight:700}}>{v}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{marginBottom:10}}>
+                <p style={{fontSize:11,color:C.muted,marginBottom:5}}>Documentos requeridos:</p>
+                {(req.docs||[]).map((doc,i)=><div key={i} style={{fontSize:12,color:C.dim,padding:"2px 0"}}>• {doc}</div>)}
+              </div>
+              {req.nota&&<div style={{fontSize:12,color:req.nota.startsWith("✅")?C.green:C.orange,background:(req.nota.startsWith("✅")?C.green:C.orange)+"11",borderRadius:6,padding:8}}>{req.nota}</div>}
+            </Card>
+          ))}
+        </div>
+      </div>}
+
+      {/* ESTRATEGIA */}
+      {tab==="estrategia"&&<div className="fi">
+        <Card style={{marginBottom:14,borderColor:C.green+"33"}}>
+          <h3 style={{fontSize:13,fontWeight:700,color:C.green,marginBottom:8,textTransform:"uppercase",letterSpacing:0.5}}>Posicionamiento</h3>
+          <p style={{fontSize:14,lineHeight:1.75,color:C.dim}}>{plan.posicionamiento}</p>
+        </Card>
+        {mercados.map(m=>(
+          <Card key={m} style={{marginBottom:14,borderColor:C.accent+"33"}}>
+            <h3 style={{fontSize:13,fontWeight:700,color:C.accent,marginBottom:8,textTransform:"uppercase",letterSpacing:0.5}}>Estrategia: {m}</h3>
+            <p style={{fontSize:14,lineHeight:1.75,color:C.dim}}>{plan.estrategia[m]}</p>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>
+              {DB.requisitos[m]?.arancel_cafe===0&&<Badge color={C.green}>✅ Arancel 0% MCCA</Badge>}
+              {DB.requisitos[m]?.arancel_cafe>30&&<Badge color={C.orange}>⚠ Arancel {DB.requisitos[m].arancel_cafe}%</Badge>}
+              {DB.paises[m]?.pib_percapita>10000&&<Badge color={C.accent}>Mercado premium</Badge>}
+              {DB.paises[m]?.idioma==="Inglés"&&<Badge color="#f59e0b">Etiqueta en inglés</Badge>}
+            </div>
+          </Card>
+        ))}
+        <Card>
+          <h3 style={{fontSize:13,fontWeight:700,color:"#f59e0b",marginBottom:12,textTransform:"uppercase",letterSpacing:0.5}}>Análisis de Brechas</h3>
+          {plan.brechas.map((b,i)=>(
+            <div key={i} style={{display:"grid",gridTemplateColumns:"130px 1fr 1fr",gap:12,padding:"10px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}>
+              <div style={{fontWeight:700,color:C.accent}}>{b.area}</div>
+              <div style={{color:C.dim}}>{b.brecha}</div>
+              <div style={{color:C.green}}>→ {b.accion}</div>
+            </div>
+          ))}
+        </Card>
+      </div>}
+
+      {/* OPERATIVO */}
+      {tab==="operativo"&&<div className="fi">
+        <Card style={{marginBottom:14}}>
+          <h3 style={{fontSize:13,fontWeight:700,color:C.accent,marginBottom:14,textTransform:"uppercase",letterSpacing:0.5}}>Cronograma de Acciones 2026–2028</h3>
+          {[
+            {area:"Producción / Operaciones",acc:["Adaptar etiquetado a requisitos de cada mercado destino","Formalizar protocolos de calidad, trazabilidad y control de inocuidad","Implementar o reforzar sistema de registro y trazabilidad desde finca"],h:"2026",p:"$8,000–15,000"},
+            {area:"Comercialización y marketing",acc:["Identificar y contactar importadores especializados en mercados objetivo","Desarrollar material comercial B2B adaptado por mercado (catálogo, ficha técnica)","Participar en ferias sectoriales SICA y misiones comerciales B2B"],h:"2026–2027",p:"$10,000–15,000"},
+            {area:"Gestión",acc:["Implementar CRM para seguimiento estructurado de clientes internacionales","Definir KPIs de exportación y sistema de reporte mensual"],h:"2026",p:"$2,000–5,000"},
+            {area:"Calidad / Certificaciones",acc:["Obtener registros sanitarios en países destino con representante local","Gestionar nuevas certificaciones según exigencias de mercados seleccionados"],h:"2026",p:"$10,000–16,000"},
+          ].map(it=>(
+            <div key={it.area} style={{padding:"12px 0",borderBottom:`1px solid ${C.border}`}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
+                <span style={{fontWeight:700,fontSize:14,color:C.green}}>{it.area}</span>
+                <div style={{display:"flex",gap:6}}><Badge color={C.accent}>{it.h}</Badge><Badge color="#f59e0b">{it.p}</Badge></div>
+              </div>
+              {it.acc.map((a,i)=><div key={i} style={{fontSize:13,color:C.dim,padding:"2px 0"}}>• {a}</div>)}
+            </div>
+          ))}
+        </Card>
+        <Card style={{borderColor:C.green+"33"}}>
+          <h3 style={{fontSize:13,fontWeight:700,color:C.green,marginBottom:12,textTransform:"uppercase",letterSpacing:0.5}}>Próximos Pasos Recomendados</h3>
+          {plan.pasos.map((p,i)=>(
+            <div key={i} style={{display:"flex",gap:10,padding:"9px 0",borderBottom:i<plan.pasos.length-1?`1px solid ${C.border}`:"none",fontSize:14,color:C.dim}}>
+              <div style={{width:22,height:22,borderRadius:"50%",background:C.accent+"22",color:C.accent,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:11,flexShrink:0}}>{i+1}</div>
+              {p}
+            </div>
+          ))}
+        </Card>
+      </div>}
+
+      {/* FINANCIERO */}
+      {tab==="financiero"&&<div className="fi">
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:14}}>
+          {[2026,2027,2028].map(y=>(
+            <Card key={y} style={{textAlign:"center",borderColor:C.accent+"33"}}>
+              <div style={{fontSize:11,color:C.muted,marginBottom:6,textTransform:"uppercase"}}>Proyección {y}</div>
+              <div style={{fontSize:22,fontWeight:900,color:C.accent,fontFamily:"'JetBrains Mono'"}}>${totIng(y).toLocaleString()}</div>
+              <div style={{fontSize:11,color:C.dim,marginTop:3}}>{totCli(y)} nuevos clientes</div>
+            </Card>
+          ))}
+        </div>
+        <Card style={{marginBottom:14}}>
+          <h3 style={{fontSize:13,fontWeight:700,color:C.accent,marginBottom:12,textTransform:"uppercase",letterSpacing:0.5}}>Ingresos por Mercado (USD)</h3>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+            <thead><tr style={{borderBottom:`1px solid ${C.border}`}}>
+              <th style={{textAlign:"left",padding:"7px 10px",color:C.dim}}>Mercado</th>
+              {[2026,2027,2028].map(y=><th key={y} style={{textAlign:"right",padding:"7px 10px",color:"#f59e0b"}}>{y}</th>)}
+            </tr></thead>
+            <tbody>
+              {mercados.map(m=>(
+                <tr key={m} style={{borderBottom:`1px solid ${C.border}22`}}>
+                  <td style={{padding:"9px 10px",fontWeight:600}}>{m}</td>
+                  {[2026,2027,2028].map(y=>(
+                    <td key={y} style={{padding:"9px 10px",textAlign:"right",fontFamily:"'JetBrains Mono'",color:fin.ingresos?.[m]?.[y]?C.text:C.muted}}>
+                      {fin.ingresos?.[m]?.[y]?`$${parseInt(fin.ingresos[m][y]).toLocaleString()}`:"—"}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+              <tr style={{borderTop:`2px solid ${C.border}`}}>
+                <td style={{padding:"9px 10px",fontWeight:800}}>TOTAL</td>
+                {[2026,2027,2028].map(y=>(
+                  <td key={y} style={{padding:"9px 10px",textAlign:"right",fontWeight:800,color:C.accent,fontFamily:"'JetBrains Mono'"}}>${totIng(y).toLocaleString()}</td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </Card>
+        <Card>
+          <h3 style={{fontSize:13,fontWeight:700,color:C.accent,marginBottom:12,textTransform:"uppercase",letterSpacing:0.5}}>Plan de Inversiones Orientativo 2026–2028</h3>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+            <thead><tr style={{borderBottom:`1px solid ${C.border}`}}>
+              <th style={{textAlign:"left",padding:"7px 10px",color:C.dim}}>Área</th>
+              {[2026,2027,2028].map(y=><th key={y} style={{textAlign:"right",padding:"7px 10px",color:C.dim}}>{y}</th>)}
+            </tr></thead>
+            <tbody>
+              {[["Producción/Operaciones",11000,15000,15000],["Gestión",3500,5000,5000],["RRHH",4500,4500,4500],["Calidad/Certificaciones",13000,13000,13000],["Marketing y Comercialización",18500,12500,9500]].map(([a,...vs])=>(
+                <tr key={a} style={{borderBottom:`1px solid ${C.border}22`}}>
+                  <td style={{padding:"9px 10px"}}>{a}</td>
+                  {vs.map((v,i)=><td key={i} style={{padding:"9px 10px",textAlign:"right",fontFamily:"'JetBrains Mono'",color:C.dim}}>${v.toLocaleString()}</td>)}
+                </tr>
+              ))}
+              <tr style={{borderTop:`2px solid ${C.border}`}}>
+                <td style={{padding:"9px 10px",fontWeight:800}}>TOTAL</td>
+                {[55000,50000,47000].map((v,i)=><td key={i} style={{padding:"9px 10px",textAlign:"right",fontWeight:800,color:C.accent,fontFamily:"'JetBrains Mono'"}}>${v.toLocaleString()}</td>)}
+              </tr>
+            </tbody>
+          </table>
+        </Card>
+      </div>}
+    </div>
+  );
+}
+
+// ============================================================
+// APP PRINCIPAL
+// ============================================================
+export default function App() {
+  const [step, setStep] = useState(0);
+  const [emp, setEmp] = useState({nombre:"",comercial:"",pais:"",anio:"",sector:"",tipo:"",expExport:"",certs:"",desc:""});
+  const [prod, setProd] = useState({nombre:"",precio:"",capacidad:"",caract:"",ventajas:"",formato:"",canal:""});
+  const [sel, setSel] = useState([]);
+  const [fin, setFin] = useState({ventas:"",pctExp:"",margen:"",presupuesto:"",clientes:{},ingresos:{}});
+  const [scoring, setScoring] = useState([]);
+
+  const setE = (k,v) => setEmp(p=>({...p,[k]:v}));
+  const setP = (k,v) => setProd(p=>({...p,[k]:v}));
+  const setF = (k,v) => setFin(p=>({...p,[k]:v}));
+
+  const next = () => {
+    if (step===1) setScoring(calcularScoring(emp.pais, emp.sector));
+    setStep(s=>s+1);
+    window.scrollTo(0,0);
+  };
+  const back = () => { setStep(s=>s-1); window.scrollTo(0,0); };
+
+  return (
+    <>
+      <style>{gCSS}</style>
+      <div style={{minHeight:"100vh",background:C.bg}}>
+        <div style={{background:C.card,borderBottom:`1px solid ${C.border}`,padding:"11px 22px",display:"flex",alignItems:"center",gap:14}} className="np">
+          <div style={{width:30,height:30,background:C.accent,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:13,color:"#000"}}>PI</div>
+          <div>
+            <div style={{fontWeight:800,fontSize:13,letterSpacing:0.5}}>PLAN DE INTERNACIONALIZACIÓN · SICA</div>
+            <div style={{fontSize:10,color:C.muted,fontFamily:"'JetBrains Mono'"}}>EKO BOOTCAMP 3.0 · BETA · Café · Cacao · Bebidas · Mariscos · Miel · Sin coste de API</div>
+          </div>
+        </div>
+        <div style={{maxWidth:860,margin:"0 auto",padding:"28px 20px"}} className="pf">
+          {step<4&&<ProgressBar step={step}/>}
+          {step===0&&<StepEmpresa d={emp} set={setE} next={next}/>}
+          {step===1&&<StepProducto d={prod} set={setP} empresa={emp} next={next} back={back}/>}
+          {step===2&&<StepMercados empresa={emp} next={next} back={back} sel={sel} setSel={setSel}/>}
+          {step===3&&<StepFinanciero d={fin} set={setF} mercados={sel} next={next} back={back}/>}
+          {step===4&&<PlanGenerado empresa={emp} producto={prod} mercados={sel} fin={fin} scoring={scoring}/>}
+        </div>
+      </div>
+    </>
+  );
+}
